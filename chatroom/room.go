@@ -34,10 +34,10 @@ func (c *chatroom) GetInfo(ctx context.Context, chatroomId string) (*InfoResp, e
 type CreateReq struct {
 	Name        string   `json:"name" validate:"required,max=128"`
 	Description string   `json:"description" validate:"required,max=512"`
-	MaxUsers    int      `json:"maxusers,omitempty" validate:"omitempty,min=1,max=10000"`
+	MaxUsers    *int     `json:"maxusers,omitempty" validate:"omitempty,min=1,max=10000"`
 	Owner       string   `json:"owner" validate:"required"`
 	Members     []string `json:"members,omitempty" validate:"omitempty,min=1,dive,required"`
-	Custom      string   `json:"custom,omitempty" validate:"omitempty,max=8192"`
+	Custom      *string  `json:"custom,omitempty" validate:"omitempty,max=8192"`
 }
 
 type CreateResp struct {

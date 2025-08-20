@@ -14,10 +14,9 @@ import (
 )
 
 type Config struct {
-	Endpoint     string // 接口请求的地址, 这里注意后缀不可以带有 /
+	Endpoint     string `json:"endpoint" ` // 接口请求的地址, 这里注意后缀不可以带有 /
 	OrgName      string // 环信企业名
 	AppName      string // 环信应用名
-	AppKey       string // 环信应用key
 	ClientId     string
 	ClientSecret string
 }
@@ -78,6 +77,10 @@ func NewClient(conf Config) *Client {
 	}
 }
 
+func (c *Client) Config() Config {
+	return c.config
+}
+
 func (c *Client) Get(ctx context.Context, apiPath string, resp any) error {
 	return c.requestWithToken(ctx, http.MethodGet, apiPath, nil, resp)
 }
@@ -107,6 +110,7 @@ func (c *Client) requestWithToken(ctx context.Context, method string, apiPath st
 			return err
 		}
 	}
+	fmt.Printf(buf.String())
 	httpReq, err := http.NewRequestWithContext(ctx, method, c.getApiUrl(apiPath), buf)
 	if err != nil {
 		return err

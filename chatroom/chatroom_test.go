@@ -15,7 +15,6 @@ func newEaseMod() *easemod.EaseMod {
 		Endpoint:     "https://a71.easemob.com",
 		OrgName:      "",
 		AppName:      "",
-		AppKey:       "",
 		ClientId:     "",
 		ClientSecret: "",
 	})

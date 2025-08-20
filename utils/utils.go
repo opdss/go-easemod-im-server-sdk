@@ -1,8 +1,7 @@
 package utils
 
-func PointerAny[T comparable](v T) *T {
-	if v == nil {
-		return nil
-	}
-	return &v
+func PointerAny[T any](v T) *T {
+	r := new(T)
+	*r = v
+	return r
 }

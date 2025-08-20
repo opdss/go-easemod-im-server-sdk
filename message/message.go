@@ -29,14 +29,14 @@ type Message interface {
 	SendToChatroom(ctx context.Context, req any) (*SendMsgResp, error)
 
 	// 广播消息发送，慎用
-	BroadcastTxt(ctx context.Context, req *BroadcastMsgReq[TxtMsg]) (*SendMsgResp, error)
-	BroadcastImg(ctx context.Context, req *BroadcastMsgReq[ImgMsg]) (*SendMsgResp, error)
-	BroadcastAudio(ctx context.Context, req *BroadcastMsgReq[AudioMsg]) (*SendMsgResp, error)
-	BroadcastVideo(ctx context.Context, req *BroadcastMsgReq[VideoMsg]) (*SendMsgResp, error)
-	BroadcastFile(ctx context.Context, req *BroadcastMsgReq[FileMsg]) (*SendMsgResp, error)
-	BroadcastLoc(ctx context.Context, req *BroadcastMsgReq[LocMsg]) (*SendMsgResp, error)
-	BroadcastCmd(ctx context.Context, req *BroadcastMsgReq[CmdMsg]) (*SendMsgResp, error)
-	BroadcastCustom(ctx context.Context, req *BroadcastMsgReq[CustomMsg]) (*SendMsgResp, error)
+	BroadcastTxt(ctx context.Context, req *BroadcastMsgReq[BroadcastTxtMsg]) (*SendMsgResp, error)
+	BroadcastImg(ctx context.Context, req *BroadcastMsgReq[BroadcastImgMsg]) (*SendMsgResp, error)
+	BroadcastAudio(ctx context.Context, req *BroadcastMsgReq[BroadcastAudioMsg]) (*SendMsgResp, error)
+	BroadcastVideo(ctx context.Context, req *BroadcastMsgReq[BroadcastVideoMsg]) (*SendMsgResp, error)
+	BroadcastFile(ctx context.Context, req *BroadcastMsgReq[BroadcastFileMsg]) (*SendMsgResp, error)
+	BroadcastLoc(ctx context.Context, req *BroadcastMsgReq[BroadcastLocMsg]) (*SendMsgResp, error)
+	BroadcastCmd(ctx context.Context, req *BroadcastMsgReq[BroadcastCmdMsg]) (*SendMsgResp, error)
+	BroadcastCustom(ctx context.Context, req *BroadcastMsgReq[BroadcastCustomMsg]) (*SendMsgResp, error)
 	Broadcast(ctx context.Context, req any) (*SendMsgResp, error)
 }
 

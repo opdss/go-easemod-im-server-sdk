@@ -9,12 +9,13 @@ import (
 
 func TestMessage_Broadcast(t *testing.T) {
 
-	data, err := newEaseMod().Message().BroadcastTxt(context.Background(), &message.BroadcastMsgReq[message.TxtMsg]{
+	data, err := newEaseMod().Message().BroadcastTxt(context.Background(), &message.BroadcastMsgReq[message.BroadcastTxtMsg]{
 		TargetType: "users",
-		Appkey:     "aaaa",
-		Msg: message.BroadcastMsg[message.TxtMsg]{
+		//Appkey:     newEaseMod().Client.Config().AppKey,
+		//From: utils.PointerAny("888888"),
+		Msg: message.BroadcastTxtMsg{
 			Type: message.Txt,
-			Msg: message.TxtMsg{
+			TxtMsg: message.TxtMsg{
 				Msg: "test111",
 			},
 		},
