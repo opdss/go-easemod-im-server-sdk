@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/opdss/go-easemod-im-server-sdk/user"
+	"github.com/opdss/go-easemod-im-server-sdk/utils"
 	"testing"
 )
 
@@ -28,7 +29,16 @@ func TestEaseModUser_GetToken(t *testing.T) {
 		Username:       "888888341",
 		GrantType:      "inherit",
 		AutoCreateUser: false,
-		Ttl:            86400,
+		Ttl:            utils.PointerAny(86400),
+	})
+	fmt.Printf("%+v\n", data)
+	fmt.Printf("%+v\n", err)
+
+	data, err = newEaseMod().User().GetToken(context.Background(), &user.TokenReq{
+		Username:       "888888341",
+		GrantType:      "inherit",
+		AutoCreateUser: false,
+		Ttl:            utils.PointerAny(86400),
 	})
 
 	fmt.Printf("%+v\n", data)

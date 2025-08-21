@@ -4,21 +4,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/opdss/go-easemod-im-server-sdk/utils"
 	"golang.org/x/sync/singleflight"
 	"io"
 	"log"
 	"net/http"
-	"strings"
+	"sync"
 	"time"
 )
 
 type Config struct {
-	Endpoint     string `json:"endpoint" ` // 接口请求的地址, 这里注意后缀不可以带有 /
-	OrgName      string // 环信企业名
-	AppName      string // 环信应用名
-	ClientId     string
-	ClientSecret string
+	Endpoints              []string `help:"环信接口，可以配置多个，会自动切换, 这里注意后缀不可以带有/" default:""`
+	OrgName                string   `help:"环信企业名" default:""`
+	AppName                string   `help:"环信应用名" default:""`
+	ClientId               string   `help:"环信应用clientId" default:""`
+	ClientSecret           string   `help:"环信应用clientSecret" default:""`
+	TokenTTL               int64    `help:"环信token有效期，单位秒" default:"86400"`
+	ChangeEndpointInterval int64    `help:"环信切换endpoint的时间间隔，单位秒" default:"10"`
 }
 
 type CommonResp struct {
@@ -65,16 +69,22 @@ type TokenResp struct {
 }
 
 type Client struct {
-	config       Config
-	token        *TokenResp
-	singleFlight *singleflight.Group
+	config                 Config
+	token                  *TokenResp
+	singleFlight           *singleflight.Group
+	endpointLock           *sync.RWMutex
+	lastChangeEndpointTime int64
 }
 
-func NewClient(conf Config) *Client {
+func NewClient(conf Config) (*Client, error) {
+	if len(conf.Endpoints) == 0 || conf.AppName == "" || conf.OrgName == "" || conf.ClientId == "" || conf.ClientSecret == "" {
+		return nil, errors.New("环信配置错误，请检查")
+	}
 	return &Client{
 		config:       conf,
 		singleFlight: &singleflight.Group{},
-	}
+		endpointLock: &sync.RWMutex{},
+	}, nil
 }
 
 func (c *Client) Config() Config {
@@ -110,7 +120,7 @@ func (c *Client) requestWithToken(ctx context.Context, method string, apiPath st
 			return err
 		}
 	}
-	fmt.Printf(buf.String())
+	log.Println("request => ", apiPath, buf.String())
 	httpReq, err := http.NewRequestWithContext(ctx, method, c.getApiUrl(apiPath), buf)
 	if err != nil {
 		return err
@@ -125,13 +135,17 @@ func (c *Client) request(req *http.Request, resp any) error {
 	//req.Header.Set("Authorization", "Bearer "+tk)
 	httpResp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		if utils.IsNetError(err) {
+			//切域名
+			c.changeEndpoint()
+		}
 		return err
 	}
 	body, err := io.ReadAll(httpResp.Body)
 	defer func() {
 		_ = httpResp.Body.Close()
 	}()
-	log.Println(string(body))
+	log.Println("response => ", string(body))
 	if err != nil {
 		return &RequestErrorResp{Code: httpResp.StatusCode, Err: err, Body: string(body)}
 	}
@@ -148,7 +162,9 @@ func (c *Client) request(req *http.Request, resp any) error {
 }
 
 func (c *Client) getApiUrl(path string) string {
-	return fmt.Sprintf("%s/%s/%s%s", c.config.Endpoint, c.config.OrgName, c.config.AppName, path)
+	c.endpointLock.RLock()
+	defer c.endpointLock.RUnlock()
+	return fmt.Sprintf("%s/%s/%s%s", c.config.Endpoints[0], c.config.OrgName, c.config.AppName, path)
 }
 
 func (c *Client) GetToken(ctx context.Context) (string, error) {
@@ -161,7 +177,7 @@ func (c *Client) GetToken(ctx context.Context) (string, error) {
 			return "", err
 		}
 		c.token = resp
-		c.token.ExpiresAt = time.Now().Add(time.Second*time.Duration(resp.ExpiresIn) - 3)
+		c.token.ExpiresAt = time.Now().Add(time.Second*time.Duration(resp.ExpiresIn) - 10) //别卡点
 		return resp.AccessToken, nil
 	})
 	if err != nil {
@@ -171,12 +187,39 @@ func (c *Client) GetToken(ctx context.Context) (string, error) {
 }
 
 func (c *Client) getToken(ctx context.Context) (*TokenResp, error) {
-	buf := strings.NewReader("{\"grant_type\":\"client_credentials\",\"client_id\":\"" + c.config.ClientId + "\",\"client_secret\":\"" + c.config.ClientSecret + "\",\"ttl\":86400}")
-	req, err := http.NewRequestWithContext(ctx, "POST", c.getApiUrl("/token"), buf)
+	data := map[string]any{
+		"grant_type":    "client_credentials",
+		"client_id":     c.config.ClientId,
+		"client_secret": c.config.ClientSecret,
+		"ttl":           c.config.TokenTTL,
+	}
+	if c.config.TokenTTL > 10 {
+		data["ttl"] = c.config.TokenTTL
+	}
+	_b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, "POST", c.getApiUrl("/token"), bytes.NewReader(_b))
 	if err != nil {
 		return nil, err
 	}
 	resp := &TokenResp{}
 	err = c.request(req, resp)
 	return resp, err
+}
+
+// ChangeEndpoint 自动切换 Api 服务器地址
+func (c *Client) changeEndpoint() {
+	if len(c.config.Endpoints) < 2 {
+		return
+	}
+	nowUnix := time.Now().Unix()
+	// 检查距离上次更换uri的时间间隔
+	c.endpointLock.Lock()
+	defer c.endpointLock.Unlock()
+	if (nowUnix - c.lastChangeEndpointTime) >= c.config.ChangeEndpointInterval {
+		c.config.Endpoints = append(c.config.Endpoints[1:], c.config.Endpoints[0])
+		c.lastChangeEndpointTime = nowUnix
+	}
 }

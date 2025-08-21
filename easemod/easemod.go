@@ -14,15 +14,18 @@ type EaseMod struct {
 	message  message.Message
 }
 
-func NewEaseMod(conf request.Config) *EaseMod {
-	c := request.NewClient(conf)
+func NewEaseMod(conf request.Config) (*EaseMod, error) {
+	c, err := request.NewClient(conf)
+	if err != nil {
+		return nil, err
+	}
 	em := &EaseMod{
 		Client:   c,
 		chatroom: chatroom.NewChatroom(c),
 		user:     user.NewUser(c),
 		message:  message.NewMessage(c),
 	}
-	return em
+	return em, nil
 }
 
 func (em *EaseMod) User() user.User {
