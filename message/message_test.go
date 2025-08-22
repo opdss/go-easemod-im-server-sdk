@@ -11,8 +11,8 @@ func newEaseMod() *easemod.EaseMod {
 	if em != nil {
 		return em
 	}
-	em = easemod.NewEaseMod(request.Config{
-		Endpoint:     "https://a71.easemob.com",
+	em, _ = easemod.NewEaseMod(request.Config{
+		Endpoints:    []string{"https://a71.easemob.com"},
 		OrgName:      "",
 		AppName:      "",
 		ClientId:     "",

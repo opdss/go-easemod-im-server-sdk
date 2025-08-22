@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/opdss/go-easemod-im-server-sdk/chatroom"
+	"github.com/opdss/go-easemod-im-server-sdk/utils"
 	"testing"
 )
 
@@ -18,10 +19,10 @@ func TestEaseModChatRoom_Create(t *testing.T) {
 	data, err := newEaseMod().Chatroom().Create(context.Background(), &chatroom.CreateReq{
 		Name:        "chat room 888888",
 		Description: "chatroom Description",
-		MaxUsers:    10000,
+		MaxUsers:    utils.PointerAny(111),
 		Owner:       "888888",
 		Members:     []string{"8888881"},
-		Custom:      "chatroom Custom",
+		Custom:      utils.PointerAny("chatroom Custom"),
 	})
 
 	fmt.Printf("%+v\n", data)
